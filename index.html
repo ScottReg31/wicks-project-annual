@@ -78,9 +78,10 @@ input, select { font-family: inherit; }
 
 /* Frozen project column */
 .frozen-col {
-  position: sticky; left: 0; z-index: 15; background: #fff; min-width: 120px; width: var(--proj-col-width, 220px);
+  position: sticky; left: 0; z-index: 15; background: #fff;
+  min-width: var(--proj-col-width, 220px); max-width: var(--proj-col-width, 220px); width: var(--proj-col-width, 220px);
   text-align: left; padding: 0 8px 0 12px !important; font-weight: 500; font-size: 12px;
-  border-right: 2px solid #ccc !important; user-select: none; position: sticky; left: 0;
+  border-right: 2px solid #ccc !important; user-select: none;
 }
 #colResizer {
   position: absolute; top: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 50;

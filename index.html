@@ -77,10 +77,11 @@ input, select { font-family: inherit; }
 }
 
 /* Frozen project column */
-.frozen-col {
+.grid-table th.frozen-col,
+.grid-table td.frozen-col {
   position: sticky; left: 0; z-index: 15; background: #fff;
-  min-width: var(--proj-col-width, 220px); max-width: var(--proj-col-width, 220px); width: var(--proj-col-width, 220px);
-  text-align: left; padding: 0 8px 0 12px !important; font-weight: 500; font-size: 12px;
+  min-width: var(--proj-col-width, 220px) !important; max-width: var(--proj-col-width, 220px) !important; width: var(--proj-col-width, 220px) !important;
+  text-align: left !important; padding: 0 8px 0 12px !important; font-weight: 500; font-size: 12px;
   border-right: 2px solid #ccc !important; user-select: none;
 }
 #colResizer {

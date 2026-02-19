@@ -78,10 +78,14 @@ input, select { font-family: inherit; }
 
 /* Frozen project column */
 .frozen-col {
-  position: sticky; left: 0; z-index: 15; background: #fff; min-width: 220px; max-width: 220px;
-  text-align: left; padding: 0 8px !important; font-weight: 500; font-size: 12px;
-  border-right: 2px solid #ccc !important; cursor: pointer; user-select: none;
+  position: sticky; left: 0; z-index: 15; background: #fff; min-width: 120px; width: var(--proj-col-width, 220px);
+  text-align: left; padding: 0 8px 0 12px !important; font-weight: 500; font-size: 12px;
+  border-right: 2px solid #ccc !important; user-select: none; position: sticky; left: 0;
 }
+.col-resize-handle {
+  position: absolute; top: 0; right: 0; width: 5px; height: 100%; cursor: col-resize; z-index: 25;
+}
+.col-resize-handle:hover, .col-resize-handle.dragging { background: #2563eb; }
 .frozen-col.month-header, .frozen-col.week-header { z-index: 20; background: #f3f4f6; }
 .frozen-col.month-header { background: #f9fafb; }
 
@@ -168,7 +172,7 @@ input, select { font-family: inherit; }
   .grid-wrapper { overflow: visible !important; height: auto !important; }
   .grid-table { font-size: 8px !important; }
   .cell { width: 24px !important; height: 16px !important; }
-  .frozen-col { min-width: 120px !important; max-width: 120px !important; }
+  .frozen-col { min-width: 120px !important; width: 120px !important; }
   body { overflow: visible; height: auto; }
 }
 </style>
@@ -587,6 +591,8 @@ function render() {
 
   // Update legend with project colors
   updateLegend();
+  // Init column resize handles
+  setTimeout(initColResize, 0);
 }
 
 function buildProjectRow(proj, vWeeks, vStart, todayIdx) {
@@ -1087,6 +1093,47 @@ function esc(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
+}
+
+/* ===============================================================
+   COLUMN RESIZE
+   =============================================================== */
+let projColWidth = parseInt(localStorage.getItem('projColWidth') || '220');
+document.documentElement.style.setProperty('--proj-col-width', projColWidth + 'px');
+
+function initColResize() {
+  const table = document.getElementById('scheduleTable');
+  if (!table) return;
+  // Add resize handles to all frozen-col cells
+  table.querySelectorAll('.frozen-col').forEach(cell => {
+    if (cell.querySelector('.col-resize-handle')) return;
+    cell.style.position = 'sticky';
+    const handle = document.createElement('div');
+    handle.className = 'col-resize-handle';
+    cell.appendChild(handle);
+
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      handle.classList.add('dragging');
+      const startX = e.clientX;
+      const startW = projColWidth;
+
+      const onMove = (ev) => {
+        const diff = ev.clientX - startX;
+        projColWidth = Math.max(120, Math.min(500, startW + diff));
+        document.documentElement.style.setProperty('--proj-col-width', projColWidth + 'px');
+      };
+      const onUp = () => {
+        handle.classList.remove('dragging');
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        localStorage.setItem('projColWidth', projColWidth);
+      };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  });
 }
 
 /* ===============================================================

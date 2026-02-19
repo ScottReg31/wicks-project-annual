@@ -82,10 +82,11 @@ input, select { font-family: inherit; }
   text-align: left; padding: 0 8px 0 12px !important; font-weight: 500; font-size: 12px;
   border-right: 2px solid #ccc !important; user-select: none; position: sticky; left: 0;
 }
-.col-resize-handle {
-  position: absolute; top: 0; right: 0; width: 5px; height: 100%; cursor: col-resize; z-index: 25;
+#colResizer {
+  position: absolute; top: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 50;
+  background: transparent;
 }
-.col-resize-handle:hover, .col-resize-handle.dragging { background: #2563eb; }
+#colResizer:hover, #colResizer.dragging { background: #2563eb; opacity: 0.5; }
 .frozen-col.month-header, .frozen-col.week-header { z-index: 20; background: #f3f4f6; }
 .frozen-col.month-header { background: #f9fafb; }
 
@@ -1102,38 +1103,39 @@ let projColWidth = parseInt(localStorage.getItem('projColWidth') || '220');
 document.documentElement.style.setProperty('--proj-col-width', projColWidth + 'px');
 
 function initColResize() {
-  const table = document.getElementById('scheduleTable');
-  if (!table) return;
-  // Add resize handles to all frozen-col cells
-  table.querySelectorAll('.frozen-col').forEach(cell => {
-    if (cell.querySelector('.col-resize-handle')) return;
-    cell.style.position = 'sticky';
-    const handle = document.createElement('div');
-    handle.className = 'col-resize-handle';
-    cell.appendChild(handle);
+  const wrapper = document.getElementById('gridWrapper');
+  if (!wrapper) return;
+  let resizer = document.getElementById('colResizer');
+  if (!resizer) {
+    wrapper.style.position = 'relative';
+    resizer = document.createElement('div');
+    resizer.id = 'colResizer';
+    wrapper.appendChild(resizer);
+  }
+  // Position the resizer at the right edge of the frozen column
+  resizer.style.left = (projColWidth - 3) + 'px';
 
-    handle.addEventListener('mousedown', (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      handle.classList.add('dragging');
-      const startX = e.clientX;
-      const startW = projColWidth;
+  resizer.onmousedown = (e) => {
+    e.preventDefault();
+    resizer.classList.add('dragging');
+    const startX = e.clientX;
+    const startW = projColWidth;
 
-      const onMove = (ev) => {
-        const diff = ev.clientX - startX;
-        projColWidth = Math.max(120, Math.min(500, startW + diff));
-        document.documentElement.style.setProperty('--proj-col-width', projColWidth + 'px');
-      };
-      const onUp = () => {
-        handle.classList.remove('dragging');
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        localStorage.setItem('projColWidth', projColWidth);
-      };
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    });
-  });
+    const onMove = (ev) => {
+      const diff = ev.clientX - startX;
+      projColWidth = Math.max(120, Math.min(500, startW + diff));
+      document.documentElement.style.setProperty('--proj-col-width', projColWidth + 'px');
+      resizer.style.left = (projColWidth - 3) + 'px';
+    };
+    const onUp = () => {
+      resizer.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      localStorage.setItem('projColWidth', projColWidth);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
 }
 
 /* ===============================================================

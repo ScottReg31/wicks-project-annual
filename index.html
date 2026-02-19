@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wicks Construction - Program Organizer</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: #f5f5f5; color: #111; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+button { font-family: inherit; cursor: pointer; }
+input, select { font-family: inherit; }
+
+/* ===== HEADER ===== */
+.header {
+  background: #111; color: #fff; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; z-index: 100;
+}
+.header-left { display: flex; align-items: center; gap: 12px; }
+.header-left h1 { font-size: 16px; font-weight: 700; line-height: 1.2; }
+.header-left p { font-size: 11px; color: #999; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.header-btn {
+  background: #333; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500;
+  transition: background .15s;
+}
+.header-btn:hover { background: #555; }
+.header-btn.primary { background: #2563eb; }
+.header-btn.primary:hover { background: #1d4ed8; }
+.header-btn.danger { background: #dc2626; }
+.header-btn.danger:hover { background: #b91c1c; }
+
+/* ===== TOOLBAR ===== */
+.toolbar {
+  background: #fff; border-bottom: 1px solid #ddd; padding: 8px 20px; display: flex; align-items: center; gap: 8px;
+  flex-wrap: wrap; flex-shrink: 0;
+}
+.toolbar label { font-size: 12px; color: #555; font-weight: 500; }
+.toolbar select, .toolbar input[type="month"] {
+  padding: 4px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; background: #fff;
+}
+.tb-btn {
+  background: #f3f4f6; border: 1px solid #d1d5db; padding: 4px 10px; border-radius: 4px; font-size: 11px;
+  font-weight: 500; transition: all .15s; color: #374151;
+}
+.tb-btn:hover { background: #e5e7eb; }
+.tb-btn.active { background: #111; color: #fff; border-color: #111; }
+.tb-sep { width: 1px; height: 24px; background: #d1d5db; margin: 0 4px; }
+
+/* ===== GRID CONTAINER ===== */
+.grid-wrapper {
+  flex: 1; overflow: auto; position: relative; background: #fff;
+}
+
+/* ===== TABLE ===== */
+.grid-table {
+  border-collapse: separate; border-spacing: 0; table-layout: fixed;
+}
+.grid-table th, .grid-table td {
+  border-right: 1px solid #e5e7eb; border-bottom: 1px solid #e5e7eb; padding: 0; font-size: 11px; text-align: center;
+  vertical-align: middle; white-space: nowrap;
+}
+
+/* Month header row */
+.month-header {
+  background: #f9fafb; font-weight: 700; font-size: 12px; color: #111; padding: 6px 4px !important;
+  position: sticky; top: 0; z-index: 12;
+}
+.month-border-left { border-left: 2px solid #111 !important; }
+
+/* Week header row */
+.week-header {
+  background: #f3f4f6; font-weight: 500; font-size: 10px; color: #555; padding: 4px 2px !important;
+  position: sticky; top: 30px; z-index: 12; min-width: 48px;
+}
+
+/* Frozen project column */
+.frozen-col {
+  position: sticky; left: 0; z-index: 15; background: #fff; min-width: 220px; max-width: 220px;
+  text-align: left; padding: 0 8px !important; font-weight: 500; font-size: 12px;
+  border-right: 2px solid #ccc !important; cursor: pointer; user-select: none;
+}
+.frozen-col.month-header, .frozen-col.week-header { z-index: 20; background: #f3f4f6; }
+.frozen-col.month-header { background: #f9fafb; }
+
+/* Section header */
+.section-row td { background: #e5e7eb; font-weight: 700; font-size: 12px; color: #333; padding: 6px 8px !important; cursor: pointer; }
+.section-row .frozen-col { background: #e5e7eb; }
+
+/* Cell states */
+.cell {
+  width: 48px; height: 32px; cursor: pointer; position: relative; transition: background .1s;
+}
+.cell:hover { outline: 2px solid #2563eb; outline-offset: -2px; z-index: 5; }
+.cell.in-range { background: #dbeafe !important; }
+.cell.mark-x { background: #374151 !important; color: #fff; }
+.cell.mark-half { background: repeating-linear-gradient(135deg, #9ca3af, #9ca3af 3px, #e5e7eb 3px, #e5e7eb 6px) !important; }
+.cell.today-col { box-shadow: inset 2px 0 0 #dc2626; }
+.cell.selected { outline: 2px solid #f59e0b !important; outline-offset: -2px; z-index: 6; }
+
+/* Color codes on project row */
+.color-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
+
+/* Project name cell content */
+.proj-name-wrap {
+  display: flex; align-items: center; gap: 4px; padding: 2px 0;
+}
+.proj-name-wrap .proj-text { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.proj-name-wrap .proj-notes { font-size: 9px; color: #888; font-weight: 400; margin-left: 4px; }
+.proj-actions { display: none; gap: 2px; }
+.frozen-col:hover .proj-actions { display: flex; }
+.proj-action-btn {
+  background: none; border: none; font-size: 11px; color: #888; padding: 0 2px; line-height: 1;
+}
+.proj-action-btn:hover { color: #111; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 1000;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #fff; border-radius: 12px; padding: 24px; width: 420px; max-width: 90vw; max-height: 90vh;
+  overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+}
+.modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+.modal label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #555; }
+.modal input, .modal select, .modal textarea {
+  width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; margin-bottom: 12px;
+}
+.modal textarea { resize: vertical; min-height: 60px; }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+.modal-btn {
+  padding: 8px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; border: none; transition: background .15s;
+}
+.modal-btn.cancel { background: #f3f4f6; color: #374151; }
+.modal-btn.cancel:hover { background: #e5e7eb; }
+.modal-btn.save { background: #111; color: #fff; }
+.modal-btn.save:hover { background: #333; }
+
+/* ===== CONTEXT MENU ===== */
+.ctx-menu {
+  display: none; position: fixed; background: #fff; border: 1px solid #d1d5db; border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.15); padding: 4px 0; z-index: 2000; min-width: 160px;
+}
+.ctx-menu.open { display: block; }
+.ctx-item {
+  display: block; width: 100%; text-align: left; background: none; border: none; padding: 8px 16px;
+  font-size: 12px; color: #374151; transition: background .1s;
+}
+.ctx-item:hover { background: #f3f4f6; }
+.ctx-item.danger { color: #dc2626; }
+
+/* ===== LEGEND ===== */
+.legend {
+  background: #fff; border-top: 1px solid #ddd; padding: 8px 20px; display: flex; align-items: center;
+  gap: 16px; flex-shrink: 0; flex-wrap: wrap; font-size: 11px; color: #555;
+}
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-swatch { width: 20px; height: 14px; border: 1px solid #ccc; border-radius: 2px; }
+
+/* ===== PRINT ===== */
+@media print {
+  .header, .toolbar, .legend { display: none !important; }
+  .grid-wrapper { overflow: visible !important; height: auto !important; }
+  .grid-table { font-size: 8px !important; }
+  .cell { width: 24px !important; height: 16px !important; }
+  .frozen-col { min-width: 120px !important; max-width: 120px !important; }
+  body { overflow: visible; height: auto; }
+}
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="header">
+  <div class="header-left">
+    <div>
+      <h1>Wicks Construction, Inc.</h1>
+      <p>Program Organizer</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="header-btn primary" onclick="openAddProject()">+ Add Project</button>
+    <button class="header-btn" onclick="openAddSection()">+ Section</button>
+    <button class="header-btn" onclick="exportJSON()">⬇ Export</button>
+    <button class="header-btn" onclick="document.getElementById('importInput').click()">⬆ Import</button>
+    <input type="file" id="importInput" accept=".json" style="display:none" onchange="importJSON(event)">
+    <button class="header-btn" onclick="window.print()">🖨 Print</button>
+    <button class="header-btn danger" onclick="clearAllMarks()">Clear Marks</button>
+  </div>
+</div>
+
+<!-- ===== TOOLBAR ===== -->
+<div class="toolbar">
+  <label>Year:</label>
+  <select id="yearSelect" onchange="changeYear()"></select>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="setView('full')">Full Year</button>
+  <button class="tb-btn" onclick="setView('month')">This Month</button>
+  <button class="tb-btn" onclick="setView('quarter')">This Quarter</button>
+  <button class="tb-btn" onclick="setView('next3')">Next 3 Months</button>
+  <div class="tb-sep"></div>
+  <label>From:</label>
+  <input type="month" id="rangeStart" onchange="setView('custom')">
+  <label>To:</label>
+  <input type="month" id="rangeEnd" onchange="setView('custom')">
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="zoomOut()">− Zoom</button>
+  <button class="tb-btn" onclick="zoomIn()">+ Zoom</button>
+</div>
+
+<!-- ===== GRID ===== -->
+<div class="grid-wrapper" id="gridWrapper">
+  <table class="grid-table" id="gridTable"></table>
+</div>
+
+<!-- ===== LEGEND ===== -->
+<div class="legend" id="legendBar">
+  <span style="font-weight:600;">Legend:</span>
+  <div class="legend-item"><div class="legend-swatch" style="background:#374151;"></div> Full Week (X)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:repeating-linear-gradient(135deg,#9ca3af,#9ca3af 3px,#e5e7eb 3px,#e5e7eb 6px);"></div> Partial (/)</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#dbeafe;"></div> Planned Window</div>
+  <div class="legend-item"><div class="legend-swatch" style="background:#fff;box-shadow:inset 2px 0 0 #dc2626;"></div> Today</div>
+  <!-- Dynamic color legends appended here -->
+</div>
+
+<!-- ===== ADD/EDIT PROJECT MODAL ===== -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal">
+    <h2 id="modalTitle">Add Project</h2>
+    <input type="hidden" id="editProjectId">
+    <label>Project Name *</label>
+    <input type="text" id="projName" placeholder="e.g. Hwy 30 Bridge Deck">
+    <label>Specs / Notes</label>
+    <textarea id="projNotes" placeholder="e.g. 1700 sy, no rain days"></textarea>
+    <label>Section / Group</label>
+    <select id="projSection"><option value="">— None —</option></select>
+    <label>Start Date</label>
+    <input type="date" id="projStart">
+    <label>End Date</label>
+    <input type="date" id="projEnd">
+    <label>Color</label>
+    <select id="projColor">
+      <option value="">None</option>
+      <option value="#2563eb">🔵 Blue</option>
+      <option value="#dc2626">🔴 Red</option>
+      <option value="#16a34a">🟢 Green</option>
+      <option value="#f59e0b">🟡 Yellow</option>
+      <option value="#7c3aed">🟣 Purple</option>
+      <option value="#ea580c">🟠 Orange</option>
+      <option value="#64748b">⚫ Gray</option>
+    </select>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal('projectModal')">Cancel</button>
+      <button class="modal-btn save" onclick="saveProject()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADD SECTION MODAL ===== -->
+<div class="modal-overlay" id="sectionModal">
+  <div class="modal">
+    <h2>Add Section</h2>
+    <label>Section Name *</label>
+    <input type="text" id="sectionName" placeholder="e.g. Iowa, Minnesota">
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal('sectionModal')">Cancel</button>
+      <button class="modal-btn save" onclick="saveSection()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CONTEXT MENU ===== -->
+<div class="ctx-menu" id="ctxMenu">
+  <button class="ctx-item" onclick="ctxAction('markX')">Mark Full Week (X)</button>
+  <button class="ctx-item" onclick="ctxAction('markHalf')">Mark Partial (/)</button>
+  <button class="ctx-item" onclick="ctxAction('clear')">Clear Cell</button>
+  <button class="ctx-item" onclick="ctxAction('clearRow')">Clear Entire Row</button>
+</div>
+
+<script>
+/* ===============================================================
+   DATA MODEL
+   =============================================================== */
+const STORAGE_KEY = 'wicks_program_organizer';
+
+// Default data structure
+function defaultData() {
+  return {
+    year: new Date().getFullYear(),
+    sections: [], // [{id, name, collapsed}]
+    projects: [], // [{id, name, notes, sectionId, startDate, endDate, color, order, marks:{weekKey:'x'|'/'}}]
+    colorDefs: [
+      {color:'#2563eb',label:'Blue'},{color:'#dc2626',label:'Red'},{color:'#16a34a',label:'Green'},
+      {color:'#f59e0b',label:'Yellow'},{color:'#7c3aed',label:'Purple'},{color:'#ea580c',label:'Orange'},
+      {color:'#64748b',label:'Gray'}
+    ]
+  };
+}
+
+let data = loadData();
+let currentYear = data.year || 2026;
+let weeks = []; // [{start:Date, label:string, month:number}]
+let viewMode = 'full';
+let viewStart = null;
+let viewEnd = null;
+let colWidth = 48;
+let selectedCell = null; // {projId, weekIdx}
+let ctxCell = null;
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      // Ensure all fields exist
+      if (!d.sections) d.sections = [];
+      if (!d.projects) d.projects = [];
+      if (!d.colorDefs) d.colorDefs = defaultData().colorDefs;
+      return d;
+    }
+  } catch(e) {}
+  return defaultData();
+}
+
+function saveData() {
+  data.year = currentYear;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+/* ===============================================================
+   WEEK CALCULATIONS
+   =============================================================== */
+function buildWeeks(year) {
+  weeks = [];
+  // Find first Monday of the year (or last Monday of previous year)
+  let d = new Date(year, 0, 1);
+  let day = d.getDay();
+  // getDay: 0=Sun, 1=Mon...
+  let offset = (day <= 1) ? (1 - day) : (8 - day);
+  let firstMon = new Date(year, 0, 1 + offset);
+  // If Jan 1 is Mon, offset=0
+  if (day === 1) firstMon = new Date(year, 0, 1);
+  // Also include a partial first week if year starts mid-week
+  if (day > 1 && day <= 4) {
+    // First partial week starts Jan 1 going back to Monday
+    let prevMon = new Date(year, 0, 1 - (day - 1));
+    firstMon = prevMon;
+  } else if (day === 0) {
+    firstMon = new Date(year, 0, 2); // next Monday
+  } else if (day > 4) {
+    // Start from next Monday
+    firstMon = new Date(year, 0, 1 + (8 - day));
+  }
+
+  // Generate ~53 weeks covering the year
+  let mon = new Date(firstMon);
+  for (let i = 0; i < 54; i++) {
+    let wkStart = new Date(mon);
+    let wkEnd = new Date(mon);
+    wkEnd.setDate(wkEnd.getDate() + 6);
+    // Only include if week overlaps with the target year
+    if (wkStart.getFullYear() > year) break;
+    if (wkEnd.getFullYear() < year && wkStart.getFullYear() < year) { mon.setDate(mon.getDate()+7); continue; }
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    let labelDate = wkStart;
+    // Use the Thursday of the week to determine the month (ISO week)
+    let thu = new Date(wkStart);
+    thu.setDate(thu.getDate() + 3);
+    weeks.push({
+      start: wkStart,
+      end: wkEnd,
+      label: monthNames[wkStart.getMonth()] + ' ' + wkStart.getDate(),
+      month: thu.getMonth(),
+      key: wkStart.toISOString().slice(0,10)
+    });
+    mon.setDate(mon.getDate() + 7);
+  }
+}
+
+function getWeekIndexForDate(dateStr) {
+  if (!dateStr) return -1;
+  const d = new Date(dateStr + 'T00:00:00');
+  for (let i = 0; i < weeks.length; i++) {
+    if (d >= weeks[i].start && d <= weeks[i].end) return i;
+  }
+  return -1;
+}
+
+function getTodayWeekIndex() {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  for (let i = 0; i < weeks.length; i++) {
+    if (today >= weeks[i].start && today <= weeks[i].end) return i;
+  }
+  return -1;
+}
+
+/* ===============================================================
+   VIEW / FILTER
+   =============================================================== */
+function getVisibleRange() {
+  if (viewMode === 'full') return [0, weeks.length - 1];
+  const today = new Date();
+  const cm = today.getMonth();
+  const cy = today.getFullYear();
+
+  if (viewMode === 'month') {
+    let s = -1, e = -1;
+    for (let i = 0; i < weeks.length; i++) {
+      if (weeks[i].month === cm && (cy === currentYear || currentYear === cy)) {
+        if (s === -1) s = i;
+        e = i;
+      }
+    }
+    if (s === -1) return [0, weeks.length - 1];
+    return [s, e];
+  }
+
+  if (viewMode === 'quarter') {
+    const qStart = Math.floor(cm / 3) * 3;
+    let s = -1, e = -1;
+    for (let i = 0; i < weeks.length; i++) {
+      if (weeks[i].month >= qStart && weeks[i].month < qStart + 3) {
+        if (s === -1) s = i;
+        e = i;
+      }
+    }
+    if (s === -1) return [0, weeks.length - 1];
+    return [s, e];
+  }
+
+  if (viewMode === 'next3') {
+    let s = -1, e = -1;
+    for (let i = 0; i < weeks.length; i++) {
+      const wm = weeks[i].month;
+      const inRange = (wm >= cm && wm < cm + 3) || (cm + 3 > 12 && wm < (cm + 3) % 12);
+      if (inRange) {
+        if (s === -1) s = i;
+        e = i;
+      }
+    }
+    if (s === -1) return [0, weeks.length - 1];
+    return [s, e];
+  }
+
+  if (viewMode === 'custom' && viewStart !== null && viewEnd !== null) {
+    let s = -1, e = -1;
+    for (let i = 0; i < weeks.length; i++) {
+      if (weeks[i].month >= viewStart && weeks[i].month <= viewEnd) {
+        if (s === -1) s = i;
+        e = i;
+      }
+    }
+    if (s === -1) return [0, weeks.length - 1];
+    return [s, e];
+  }
+
+  return [0, weeks.length - 1];
+}
+
+function setView(mode) {
+  viewMode = mode;
+  // Update active button
+  document.querySelectorAll('.toolbar .tb-btn').forEach(b => b.classList.remove('active'));
+  if (mode === 'custom') {
+    const rs = document.getElementById('rangeStart').value;
+    const re = document.getElementById('rangeEnd').value;
+    if (rs && re) {
+      viewStart = parseInt(rs.split('-')[1]) - 1;
+      viewEnd = parseInt(re.split('-')[1]) - 1;
+    }
+  }
+  render();
+}
+
+function changeYear() {
+  currentYear = parseInt(document.getElementById('yearSelect').value);
+  buildWeeks(currentYear);
+  saveData();
+  render();
+}
+
+function zoomIn() { colWidth = Math.min(120, colWidth + 8); render(); }
+function zoomOut() { colWidth = Math.max(24, colWidth - 8); render(); }
+
+/* ===============================================================
+   RENDER
+   =============================================================== */
+function render() {
+  const [vStart, vEnd] = getVisibleRange();
+  const todayIdx = getTodayWeekIndex();
+  const table = document.getElementById('gridTable');
+  table.innerHTML = '';
+
+  // Visible weeks
+  const vWeeks = weeks.slice(vStart, vEnd + 1);
+
+  // ---- Month header row ----
+  const monthRow = document.createElement('tr');
+  const mCorner = document.createElement('th');
+  mCorner.className = 'frozen-col month-header';
+  mCorner.textContent = '';
+  monthRow.appendChild(mCorner);
+
+  let mi = 0;
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  while (mi < vWeeks.length) {
+    const cm = vWeeks[mi].month;
+    let span = 0;
+    let si = mi;
+    while (mi < vWeeks.length && vWeeks[mi].month === cm) { span++; mi++; }
+    const th = document.createElement('th');
+    th.className = 'month-header';
+    if (si === 0 || vWeeks[si].month !== vWeeks[si-1]?.month) th.classList.add('month-border-left');
+    th.colSpan = span;
+    th.style.minWidth = (colWidth * span) + 'px';
+    th.textContent = monthNames[cm];
+    monthRow.appendChild(th);
+  }
+  table.appendChild(monthRow);
+
+  // ---- Week header row ----
+  const weekRow = document.createElement('tr');
+  const wCorner = document.createElement('th');
+  wCorner.className = 'frozen-col week-header';
+  wCorner.textContent = 'Project';
+  weekRow.appendChild(wCorner);
+
+  vWeeks.forEach((w, i) => {
+    const th = document.createElement('th');
+    th.className = 'week-header';
+    th.style.width = colWidth + 'px';
+    th.style.minWidth = colWidth + 'px';
+    th.textContent = w.label;
+    const globalIdx = vStart + i;
+    if (i === 0 || w.month !== vWeeks[i-1]?.month) th.classList.add('month-border-left');
+    weekRow.appendChild(th);
+  });
+  table.appendChild(weekRow);
+
+  // ---- Group projects by section ----
+  const unsectioned = data.projects.filter(p => !p.sectionId);
+  const sectionMap = {};
+  data.sections.forEach(s => { sectionMap[s.id] = { section: s, projects: [] }; });
+  data.projects.forEach(p => {
+    if (p.sectionId && sectionMap[p.sectionId]) {
+      sectionMap[p.sectionId].projects.push(p);
+    }
+  });
+
+  // Render sections
+  data.sections.forEach(sec => {
+    const sData = sectionMap[sec.id];
+    // Section header row
+    const sr = document.createElement('tr');
+    sr.className = 'section-row';
+    const std = document.createElement('td');
+    std.className = 'frozen-col';
+    std.colSpan = 1;
+    std.innerHTML = `<span style="margin-right:6px;">${sec.collapsed ? '▶' : '▼'}</span>${esc(sec.name)}
+      <button class="proj-action-btn" onclick="event.stopPropagation();editSection('${sec.id}')" title="Edit">✏️</button>
+      <button class="proj-action-btn" onclick="event.stopPropagation();deleteSection('${sec.id}')" title="Delete">🗑</button>`;
+    std.onclick = () => { sec.collapsed = !sec.collapsed; saveData(); render(); };
+    sr.appendChild(std);
+    const sempty = document.createElement('td');
+    sempty.colSpan = vWeeks.length;
+    sempty.style.background = '#e5e7eb';
+    sr.appendChild(sempty);
+    table.appendChild(sr);
+
+    if (!sec.collapsed) {
+      sData.projects.sort((a,b) => (a.order||0) - (b.order||0));
+      sData.projects.forEach(p => table.appendChild(buildProjectRow(p, vWeeks, vStart, todayIdx)));
+    }
+  });
+
+  // Unsectioned projects
+  unsectioned.sort((a,b) => (a.order||0) - (b.order||0));
+  unsectioned.forEach(p => table.appendChild(buildProjectRow(p, vWeeks, vStart, todayIdx)));
+
+  // Update legend with project colors
+  updateLegend();
+}
+
+function buildProjectRow(proj, vWeeks, vStart, todayIdx) {
+  const tr = document.createElement('tr');
+  tr.dataset.projId = proj.id;
+
+  // Frozen project name cell
+  const nameTd = document.createElement('td');
+  nameTd.className = 'frozen-col';
+  let colorDot = proj.color ? `<span class="color-dot" style="background:${proj.color};"></span>` : '';
+  let notesSpan = proj.notes ? `<span class="proj-notes">(${esc(proj.notes)})</span>` : '';
+  nameTd.innerHTML = `<div class="proj-name-wrap">
+    ${colorDot}<span class="proj-text">${esc(proj.name)}${notesSpan}</span>
+    <span class="proj-actions">
+      <button class="proj-action-btn" onclick="event.stopPropagation();editProject('${proj.id}')" title="Edit">✏️</button>
+      <button class="proj-action-btn" onclick="event.stopPropagation();moveProject('${proj.id}',-1)" title="Move Up">▲</button>
+      <button class="proj-action-btn" onclick="event.stopPropagation();moveProject('${proj.id}',1)" title="Move Down">▼</button>
+      <button class="proj-action-btn" onclick="event.stopPropagation();deleteProject('${proj.id}')" title="Delete">🗑</button>
+    </span>
+  </div>`;
+  nameTd.onclick = () => editProject(proj.id);
+  tr.appendChild(nameTd);
+
+  // Determine planned window
+  const rangeStart = getWeekIndexForDate(proj.startDate);
+  const rangeEnd = getWeekIndexForDate(proj.endDate);
+
+  // Week cells
+  vWeeks.forEach((w, i) => {
+    const globalIdx = vStart + i;
+    const td = document.createElement('td');
+    td.className = 'cell';
+    td.style.width = colWidth + 'px';
+    td.style.minWidth = colWidth + 'px';
+
+    // Month border
+    if (i === 0 || w.month !== vWeeks[i-1]?.month) td.classList.add('month-border-left');
+
+    // In planned range?
+    if (rangeStart >= 0 && rangeEnd >= 0 && globalIdx >= rangeStart && globalIdx <= rangeEnd) {
+      td.classList.add('in-range');
+    }
+
+    // Mark
+    const mark = proj.marks?.[w.key];
+    if (mark === 'x') { td.classList.add('mark-x'); td.textContent = 'X'; }
+    else if (mark === '/') { td.classList.add('mark-half'); td.textContent = '/'; }
+
+    // Today indicator
+    if (globalIdx === todayIdx) td.classList.add('today-col');
+
+    // Selected
+    if (selectedCell && selectedCell.projId === proj.id && selectedCell.weekIdx === globalIdx) {
+      td.classList.add('selected');
+    }
+
+    // Click to cycle
+    td.onclick = () => cycleCell(proj.id, w.key, globalIdx);
+
+    // Right-click context menu
+    td.oncontextmenu = (e) => {
+      e.preventDefault();
+      ctxCell = { projId: proj.id, weekKey: w.key };
+      showCtxMenu(e.clientX, e.clientY);
+    };
+
+    tr.appendChild(td);
+  });
+
+  return tr;
+}
+
+function cycleCell(projId, weekKey, globalIdx) {
+  const proj = data.projects.find(p => p.id === projId);
+  if (!proj) return;
+  if (!proj.marks) proj.marks = {};
+
+  const current = proj.marks[weekKey];
+  if (!current) proj.marks[weekKey] = 'x';
+  else if (current === 'x') proj.marks[weekKey] = '/';
+  else delete proj.marks[weekKey];
+
+  selectedCell = { projId, weekIdx: globalIdx };
+  saveData();
+  render();
+}
+
+/* ===============================================================
+   CONTEXT MENU
+   =============================================================== */
+function showCtxMenu(x, y) {
+  const menu = document.getElementById('ctxMenu');
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.classList.add('open');
+}
+
+function hideCtxMenu() {
+  document.getElementById('ctxMenu').classList.remove('open');
+}
+
+function ctxAction(action) {
+  hideCtxMenu();
+  if (!ctxCell) return;
+  const proj = data.projects.find(p => p.id === ctxCell.projId);
+  if (!proj) return;
+  if (!proj.marks) proj.marks = {};
+
+  if (action === 'markX') proj.marks[ctxCell.weekKey] = 'x';
+  else if (action === 'markHalf') proj.marks[ctxCell.weekKey] = '/';
+  else if (action === 'clear') delete proj.marks[ctxCell.weekKey];
+  else if (action === 'clearRow') proj.marks = {};
+
+  saveData();
+  render();
+}
+
+document.addEventListener('click', () => hideCtxMenu());
+
+/* ===============================================================
+   KEYBOARD NAVIGATION
+   =============================================================== */
+document.addEventListener('keydown', (e) => {
+  if (!selectedCell) return;
+  if (document.querySelector('.modal-overlay.open')) return;
+
+  const projIds = getOrderedProjectIds();
+  const [vStart, vEnd] = getVisibleRange();
+  let pi = projIds.indexOf(selectedCell.projId);
+  let wi = selectedCell.weekIdx;
+
+  if (e.key === 'ArrowRight') { wi = Math.min(vEnd, wi + 1); e.preventDefault(); }
+  else if (e.key === 'ArrowLeft') { wi = Math.max(vStart, wi - 1); e.preventDefault(); }
+  else if (e.key === 'ArrowDown') { pi = Math.min(projIds.length - 1, pi + 1); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { pi = Math.max(0, pi - 1); e.preventDefault(); }
+  else if (e.key === 'x' || e.key === 'X') {
+    const proj = data.projects.find(p => p.id === selectedCell.projId);
+    if (proj) { if (!proj.marks) proj.marks = {}; proj.marks[weeks[wi]?.key] = 'x'; saveData(); render(); }
+    return;
+  }
+  else if (e.key === '/') {
+    const proj = data.projects.find(p => p.id === selectedCell.projId);
+    if (proj) { if (!proj.marks) proj.marks = {}; proj.marks[weeks[wi]?.key] = '/'; saveData(); render(); }
+    return;
+  }
+  else if (e.key === 'Delete' || e.key === 'Backspace') {
+    const proj = data.projects.find(p => p.id === selectedCell.projId);
+    if (proj && proj.marks) { delete proj.marks[weeks[wi]?.key]; saveData(); render(); }
+    return;
+  }
+  else return;
+
+  selectedCell = { projId: projIds[pi], weekIdx: wi };
+  render();
+});
+
+function getOrderedProjectIds() {
+  const ids = [];
+  data.sections.forEach(sec => {
+    if (!sec.collapsed) {
+      data.projects.filter(p => p.sectionId === sec.id).sort((a,b) => (a.order||0)-(b.order||0)).forEach(p => ids.push(p.id));
+    }
+  });
+  data.projects.filter(p => !p.sectionId).sort((a,b) => (a.order||0)-(b.order||0)).forEach(p => ids.push(p.id));
+  return ids;
+}
+
+/* ===============================================================
+   PROJECT CRUD
+   =============================================================== */
+function openAddProject() {
+  document.getElementById('modalTitle').textContent = 'Add Project';
+  document.getElementById('editProjectId').value = '';
+  document.getElementById('projName').value = '';
+  document.getElementById('projNotes').value = '';
+  document.getElementById('projStart').value = '';
+  document.getElementById('projEnd').value = '';
+  document.getElementById('projColor').value = '';
+  populateSectionSelect('');
+  openModal('projectModal');
+  document.getElementById('projName').focus();
+}
+
+function editProject(id) {
+  const proj = data.projects.find(p => p.id === id);
+  if (!proj) return;
+  document.getElementById('modalTitle').textContent = 'Edit Project';
+  document.getElementById('editProjectId').value = id;
+  document.getElementById('projName').value = proj.name;
+  document.getElementById('projNotes').value = proj.notes || '';
+  document.getElementById('projStart').value = proj.startDate || '';
+  document.getElementById('projEnd').value = proj.endDate || '';
+  document.getElementById('projColor').value = proj.color || '';
+  populateSectionSelect(proj.sectionId || '');
+  openModal('projectModal');
+  document.getElementById('projName').focus();
+}
+
+function saveProject() {
+  const name = document.getElementById('projName').value.trim();
+  if (!name) { alert('Project name is required.'); return; }
+  const id = document.getElementById('editProjectId').value;
+  const projData = {
+    name,
+    notes: document.getElementById('projNotes').value.trim(),
+    sectionId: document.getElementById('projSection').value || null,
+    startDate: document.getElementById('projStart').value || null,
+    endDate: document.getElementById('projEnd').value || null,
+    color: document.getElementById('projColor').value || null
+  };
+
+  if (id) {
+    const proj = data.projects.find(p => p.id === id);
+    if (proj) Object.assign(proj, projData);
+  } else {
+    data.projects.push({ id: uid(), ...projData, order: data.projects.length, marks: {} });
+  }
+  saveData();
+  closeModal('projectModal');
+  render();
+}
+
+function deleteProject(id) {
+  const proj = data.projects.find(p => p.id === id);
+  if (!proj) return;
+  if (!confirm(`Delete project "${proj.name}"?`)) return;
+  data.projects = data.projects.filter(p => p.id !== id);
+  saveData();
+  render();
+}
+
+function moveProject(id, dir) {
+  const proj = data.projects.find(p => p.id === id);
+  if (!proj) return;
+  // Get siblings
+  const siblings = data.projects.filter(p => p.sectionId === proj.sectionId).sort((a,b) => (a.order||0)-(b.order||0));
+  const idx = siblings.findIndex(p => p.id === id);
+  const swapIdx = idx + dir;
+  if (swapIdx < 0 || swapIdx >= siblings.length) return;
+  const tmpOrder = siblings[idx].order;
+  siblings[idx].order = siblings[swapIdx].order;
+  siblings[swapIdx].order = tmpOrder;
+  saveData();
+  render();
+}
+
+/* ===============================================================
+   SECTION CRUD
+   =============================================================== */
+function openAddSection() {
+  document.getElementById('sectionName').value = '';
+  openModal('sectionModal');
+  document.getElementById('sectionName').focus();
+}
+
+function saveSection() {
+  const name = document.getElementById('sectionName').value.trim();
+  if (!name) { alert('Section name is required.'); return; }
+  data.sections.push({ id: uid(), name, collapsed: false });
+  saveData();
+  closeModal('sectionModal');
+  render();
+}
+
+function editSection(id) {
+  const sec = data.sections.find(s => s.id === id);
+  if (!sec) return;
+  const newName = prompt('Rename section:', sec.name);
+  if (newName && newName.trim()) {
+    sec.name = newName.trim();
+    saveData();
+    render();
+  }
+}
+
+function deleteSection(id) {
+  const sec = data.sections.find(s => s.id === id);
+  if (!sec) return;
+  if (!confirm(`Delete section "${sec.name}"? Projects in this section will become unsectioned.`)) return;
+  data.projects.forEach(p => { if (p.sectionId === id) p.sectionId = null; });
+  data.sections = data.sections.filter(s => s.id !== id);
+  saveData();
+  render();
+}
+
+function populateSectionSelect(selectedId) {
+  const sel = document.getElementById('projSection');
+  sel.innerHTML = '<option value="">— None —</option>';
+  data.sections.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id;
+    opt.textContent = s.name;
+    if (s.id === selectedId) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+/* ===============================================================
+   IMPORT / EXPORT
+   =============================================================== */
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `program-organizer-${currentYear}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function importJSON(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if (!imported.projects) throw new Error('Invalid format');
+      data = imported;
+      if (!data.sections) data.sections = [];
+      if (!data.colorDefs) data.colorDefs = defaultData().colorDefs;
+      currentYear = data.year || currentYear;
+      saveData();
+      buildWeeks(currentYear);
+      initYearSelect();
+      render();
+      alert('Import successful!');
+    } catch(err) {
+      alert('Failed to import: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function clearAllMarks() {
+  if (!confirm('Clear ALL marks from ALL projects? This cannot be undone.')) return;
+  data.projects.forEach(p => { p.marks = {}; });
+  saveData();
+  render();
+}
+
+/* ===============================================================
+   MODAL HELPERS
+   =============================================================== */
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close modals on Escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    hideCtxMenu();
+  }
+});
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+/* ===============================================================
+   LEGEND
+   =============================================================== */
+function updateLegend() {
+  // Remove old dynamic legends
+  document.querySelectorAll('.legend .dyn-legend').forEach(el => el.remove());
+  const bar = document.getElementById('legendBar');
+  const usedColors = new Set(data.projects.map(p => p.color).filter(Boolean));
+  usedColors.forEach(c => {
+    const def = data.colorDefs.find(d => d.color === c);
+    const div = document.createElement('div');
+    div.className = 'legend-item dyn-legend';
+    div.innerHTML = `<div class="legend-swatch" style="background:${c};"></div> ${def ? def.label : c}`;
+    bar.appendChild(div);
+  });
+}
+
+/* ===============================================================
+   UTILITY
+   =============================================================== */
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ===============================================================
+   INIT
+   =============================================================== */
+function initYearSelect() {
+  const sel = document.getElementById('yearSelect');
+  sel.innerHTML = '';
+  for (let y = 2025; y <= 2032; y++) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y;
+    if (y === currentYear) opt.selected = true;
+    sel.appendChild(opt);
+  }
+}
+
+function init() {
+  initYearSelect();
+  buildWeeks(currentYear);
+
+  // Set default range inputs
+  const rs = document.getElementById('rangeStart');
+  const re = document.getElementById('rangeEnd');
+  rs.value = `${currentYear}-01`;
+  re.value = `${currentYear}-12`;
+
+  render();
+
+  // Scroll to today
+  setTimeout(() => {
+    const todayIdx = getTodayWeekIndex();
+    if (todayIdx >= 0) {
+      const wrapper = document.getElementById('gridWrapper');
+      const approxScroll = todayIdx * colWidth - wrapper.clientWidth / 2;
+      wrapper.scrollLeft = Math.max(0, approxScroll);
+    }
+  }, 100);
+}
+
+init();
+</script>
+</body>
+</html>
